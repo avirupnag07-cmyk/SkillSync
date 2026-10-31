@@ -50,6 +50,9 @@ export const api = {
     profile_id: string;
     name: string;
     email?: string;
+    phone?: string;
+    linkedin?: string;
+    github?: string;
     experience_years: number;
     extracted_skills: any[];
     skills_count: number;
@@ -125,6 +128,7 @@ export const api = {
     candidate_experience_years?: number;
     required_experience_years?: number;
     job_title?: string;
+    candidate_name?: string;
   }): Promise<GapAnalysisResult> => {
     const res = await apiClient.post("/gap/analyze", payload);
     return res.data;

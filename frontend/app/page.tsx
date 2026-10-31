@@ -11,35 +11,40 @@ import {
   FileCheck2,
   Compass,
   CheckCircle2,
-  Users,
   Briefcase,
   Layers,
   FileUp,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { MarketOverview } from "@/lib/types";
-import { SAMPLE_CANDIDATE_PROFILES } from "@/lib/sample-data";
+import { MarketOverview, CandidateProfile } from "@/lib/types";
 import { DemandBarChart } from "@/components/charts/DemandBarChart";
+
+const EMPTY_PROFILE: CandidateProfile = {
+  id: "",
+  name: "No resume uploaded",
+  experience_years: 0,
+  skills: [],
+  experiences: [],
+  projects: [],
+  education: [],
+};
 
 export default function OverviewPage() {
   const [market, setMarket] = useState<MarketOverview | null>(null);
-  const [activeProfile, setActiveProfile] = useState(SAMPLE_CANDIDATE_PROFILES[0]);
+  const [activeProfile, setActiveProfile] = useState<CandidateProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem("skillsync_active_profile");
+      if (stored) setActiveProfile(JSON.parse(stored));
+    } catch {}
     api
       .getMarketOverview()
       .then((data) => setMarket(data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-
-  const handleSelectSample = (profile: typeof SAMPLE_CANDIDATE_PROFILES[0]) => {
-    setActiveProfile(profile);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("skillsync_active_profile", JSON.stringify(profile));
-    }
-  };
 
   return (
     <div>
@@ -134,53 +139,6 @@ export default function OverviewPage() {
             <div className="text-xs text-[var(--muted-text)]">
               With aliases & similarity graph
             </div>
-          </div>
-        </div>
-
-        {/* 1-Click Sample Profile Switcher */}
-        <div className="p-5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface)] space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                Try Pre-Loaded Candidate Resumes (Sample Data)
-              </h3>
-            </div>
-            <span className="text-[11px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
-              Ready to Demo
-            </span>
-          </div>
-          <p className="text-xs text-[var(--muted-text)]">
-            Select an industry persona to immediately test resume parsing, gap identification, and personalized roadmap generation:
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-            {SAMPLE_CANDIDATE_PROFILES.map((profile) => {
-              const isSelected = activeProfile.id === profile.id;
-              return (
-                <button
-                  key={profile.id}
-                  onClick={() => handleSelectSample(profile)}
-                  className={`p-3.5 rounded-lg text-left border transition-all ${
-                    isSelected
-                      ? "border-blue-500/80 bg-blue-500/5 shadow-subtle"
-                      : "border-[var(--surface-border)] bg-[var(--surface-muted)] hover:border-zinc-400 dark:hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[var(--foreground)]">
-                      {profile.name}
-                    </span>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
-                  </div>
-                  <p className="text-[11px] text-[var(--muted-text)] line-clamp-2 mt-1">
-                    {profile.bio}
-                  </p>
-                  <div className="mt-2 text-[10px] text-blue-600 dark:text-blue-400 font-mono">
-                    {profile.skills.length} verified competencies &bull; {profile.experience_years} yrs exp
-                  </div>
-                </button>
-              );
-            })}
           </div>
         </div>
 

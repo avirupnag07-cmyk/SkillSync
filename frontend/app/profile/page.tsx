@@ -19,11 +19,20 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { CandidateProfile, SkillItem, ExperienceItem, ProjectItem, EducationItem } from "@/lib/types";
-import { SAMPLE_CANDIDATE_PROFILES } from "@/lib/sample-data";
 import { getCategoryBadgeColor } from "@/lib/utils";
 
+const EMPTY_PROFILE: CandidateProfile = {
+  id: "",
+  name: "No resume uploaded",
+  experience_years: 0,
+  skills: [],
+  experiences: [],
+  projects: [],
+  education: [],
+};
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<CandidateProfile>(SAMPLE_CANDIDATE_PROFILES[0]);
+  const [profile, setProfile] = useState<CandidateProfile>(EMPTY_PROFILE);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -49,15 +58,20 @@ export default function ProfilePage() {
     try {
       const res = await api.uploadResume(file);
       const updatedProfile: CandidateProfile = {
-        ...profile,
+        ...EMPTY_PROFILE,
         id: res.profile_id,
-        name: res.name || profile.name,
-        email: res.email || profile.email,
-        experience_years: res.experience_years || profile.experience_years,
+        name: res.name || "Unnamed Candidate",
+        email: res.email,
+        phone: res.phone,
+        linkedin: res.linkedin,
+        github: res.github,
+        experience_years: res.experience_years || 0,
         skills: res.extracted_skills || [],
       };
       setProfile(updatedProfile);
       localStorage.setItem("skillsync_active_profile", JSON.stringify(updatedProfile));
+      localStorage.removeItem("skillsync_last_gap_id");
+      localStorage.removeItem("skillsync_last_gap_result");
       setNotification(`Resume parsed successfully! Extracted ${res.skills_count} skills.`);
     } catch (err: any) {
       setNotification(`Error uploading resume: ${err.response?.data?.detail || err.message}`);
@@ -111,12 +125,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLoadSample = (sample: typeof SAMPLE_CANDIDATE_PROFILES[0]) => {
-    setProfile(sample);
-    localStorage.setItem("skillsync_active_profile", JSON.stringify(sample));
-    setNotification(`Loaded sample profile: ${sample.name}`);
-  };
-
   return (
     <div>
       <Header
@@ -163,38 +171,12 @@ export default function ProfilePage() {
             </label>
           </div>
 
-          {/* Quick Sample Selector */}
-          <div className="p-5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface)] flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--foreground)] mb-1">
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>Instant Hackathon Demos</span>
-              </div>
-              <p className="text-xs text-[var(--muted-text)] mb-3">
-                Load a pre-configured sample resume with real-world technical skills:
-              </p>
-              <div className="space-y-2">
-                {SAMPLE_CANDIDATE_PROFILES.map((sample) => (
-                  <button
-                    key={sample.id}
-                    onClick={() => handleLoadSample(sample)}
-                    className="w-full text-left p-2 rounded text-xs border border-[var(--surface-border)] bg-[var(--surface-muted)] hover:border-blue-500/60 transition-colors flex items-center justify-between"
-                  >
-                    <span className="font-medium text-[var(--foreground)] truncate">
-                      {sample.name.split("(")[0]}
-                    </span>
-                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono">
-                      {sample.skills.length} skills
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          {/* Save Controls */}
+          <div className="p-5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface)] flex flex-col justify-end">
             <button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="mt-4 w-full flex items-center justify-center gap-2 py-2 rounded-md bg-[var(--surface-muted)] hover:bg-[var(--surface-border)] text-xs font-semibold text-[var(--foreground)] border border-[var(--surface-border)] transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-[var(--surface-muted)] hover:bg-[var(--surface-border)] text-xs font-semibold text-[var(--foreground)] border border-[var(--surface-border)] transition-colors"
             >
               <Save className="w-4 h-4" />
               <span>{saving ? "Saving..." : "Save Profile Changes"}</span>
@@ -341,11 +323,11 @@ export default function ProfilePage() {
                   experiences: [
                     ...profile.experiences,
                     {
-                      company: "New Company",
-                      role: "Senior Software Engineer",
-                      duration: "2023 - Present",
-                      description: "Contributed to distributed architecture and feature scaling.",
-                      skills_used: ["Python", "FastAPI"],
+                      company: "",
+                      role: "",
+                      duration: "",
+                      description: "",
+                      skills_used: [],
                     },
                   ],
                 })
@@ -357,17 +339,28 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-3">
-            {profile.experiences.map((exp, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-muted)] relative space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[var(--foreground)]">
-                    {exp.role} &bull; {exp.company}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-[var(--muted-text)] font-mono">{exp.duration}</span>
+            {profile.experiences.length === 0 && (
+              <p className="text-xs text-[var(--muted-text)]">
+                No work experience yet. Click "Add Experience" to enter company, role, duration and responsibilities.
+              </p>
+            )}
+            {profile.experiences.map((exp, idx) => {
+              const updateExp = (patch: Partial<ExperienceItem>) =>
+                setProfile({
+                  ...profile,
+                  experiences: profile.experiences.map((e, i) => (i === idx ? { ...e, ...patch } : e)),
+                });
+              const inputCls =
+                "w-full mt-1 px-3 py-1.5 rounded-md border border-[var(--surface-border)] bg-[var(--surface)] text-xs text-[var(--foreground)]";
+              return (
+                <div
+                  key={idx}
+                  className="p-4 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-muted)] relative space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--foreground)]">
+                      {exp.role || "Role"} &bull; {exp.company || "Company"}
+                    </span>
                     <button
                       onClick={() =>
                         setProfile({
@@ -376,21 +369,72 @@ export default function ProfilePage() {
                         })
                       }
                       className="text-red-500 hover:text-red-600"
+                      title="Remove experience"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-[var(--muted-text)]">Company Name</label>
+                      <input
+                        type="text"
+                        value={exp.company}
+                        onChange={(e) => updateExp({ company: e.target.value })}
+                        placeholder="e.g. Acme Technologies"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--muted-text)]">Role / Job Title</label>
+                      <input
+                        type="text"
+                        value={exp.role}
+                        onChange={(e) => updateExp({ role: e.target.value })}
+                        placeholder="e.g. Software Engineer"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[var(--muted-text)]">Duration</label>
+                      <input
+                        type="text"
+                        value={exp.duration}
+                        onChange={(e) => updateExp({ duration: e.target.value })}
+                        placeholder="e.g. Jan 2022 - Present"
+                        className={`${inputCls} font-mono`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[var(--muted-text)]">Work Description / Responsibilities</label>
+                    <textarea
+                      value={exp.description || ""}
+                      onChange={(e) => updateExp({ description: e.target.value })}
+                      rows={3}
+                      placeholder="Describe what you built, owned or achieved in this role"
+                      className={inputCls}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[var(--muted-text)]">Skills / Technologies Used (comma separated)</label>
+                    <input
+                      type="text"
+                      value={exp.skills_used.join(",")}
+                      onChange={(e) => updateExp({ skills_used: e.target.value.split(",") })}
+                      onBlur={() =>
+                        updateExp({ skills_used: exp.skills_used.map((t) => t.trim()).filter(Boolean) })
+                      }
+                      placeholder="e.g. Python, FastAPI, Docker"
+                      className={inputCls}
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-[var(--muted-text)]">{exp.description}</p>
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {exp.skills_used.map((s, i) => (
-                    <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-[var(--surface)] text-[var(--muted-text)] border border-[var(--surface-border)]">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

@@ -19,18 +19,28 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { GapAnalysisResult, JobPosting, CandidateProfile } from "@/lib/types";
-import { SAMPLE_CANDIDATE_PROFILES } from "@/lib/sample-data";
 import { ScoreGauge } from "@/components/charts/ScoreGauge";
 import { SkillRadarChart } from "@/components/charts/SkillRadarChart";
 import { getCategoryBadgeColor } from "@/lib/utils";
+
+const EMPTY_PROFILE: CandidateProfile = {
+  id: "",
+  name: "No resume uploaded",
+  experience_years: 0,
+  skills: [],
+  experiences: [],
+  projects: [],
+  education: [],
+};
 
 function GapAnalysisContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const jobIdParam = searchParams.get("job_id");
 
-  const [profiles] = useState<CandidateProfile[]>(SAMPLE_CANDIDATE_PROFILES);
-  const [selectedProfile, setSelectedProfile] = useState<CandidateProfile>(SAMPLE_CANDIDATE_PROFILES[0]);
+  const [selectedProfile, setSelectedProfile] = useState<CandidateProfile>(EMPTY_PROFILE);
+  const profiles: CandidateProfile[] = [selectedProfile];
+  const hasProfile = selectedProfile.skills.length > 0;
   const [benchmarkJobs, setBenchmarkJobs] = useState<JobPosting[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
 
@@ -66,13 +76,14 @@ function GapAnalysisContent() {
   }, [jobIdParam]);
 
   const handleRunAnalysis = async () => {
-    if (!selectedJob) return;
+    if (!selectedJob || !hasProfile) return;
 
     setAnalyzing(true);
     setError(null);
     try {
       const data = await api.analyzeGap({
         candidate_skills: selectedProfile.skills,
+        candidate_name: selectedProfile.name,
         candidate_experience_years: selectedProfile.experience_years,
         required_experience_years: selectedJob.required_experience_years,
         raw_job_description: selectedJob.description,
@@ -93,10 +104,10 @@ function GapAnalysisContent() {
 
   // Run automatically if target job loaded and no result yet
   useEffect(() => {
-    if (selectedJob && !result && !analyzing) {
+    if (selectedJob && hasProfile && !result && !analyzing) {
       handleRunAnalysis();
     }
-  }, [selectedJob]);
+  }, [selectedJob, selectedProfile]);
 
   const handleGenerateRoadmap = () => {
     if (result) {
@@ -118,11 +129,7 @@ function GapAnalysisContent() {
             <label className="text-xs text-[var(--muted-text)] font-medium">Candidate Profile</label>
             <select
               value={selectedProfile.id}
-              onChange={(e) => {
-                const found = profiles.find((p) => p.id === e.target.value) || selectedProfile;
-                setSelectedProfile(found);
-                localStorage.setItem("skillsync_active_profile", JSON.stringify(found));
-              }}
+              onChange={() => {}}
               className="w-full mt-1 px-3 py-2 rounded-md border border-[var(--surface-border)] bg-[var(--surface-muted)] text-xs text-[var(--foreground)]"
             >
               {profiles.map((p) => (
@@ -154,7 +161,7 @@ function GapAnalysisContent() {
           <div>
             <button
               onClick={handleRunAnalysis}
-              disabled={analyzing}
+              disabled={analyzing || !hasProfile}
               className="w-full py-2 px-4 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-electric flex items-center justify-center gap-2 transition-colors"
             >
               <Target className="w-4 h-4" />
@@ -162,6 +169,12 @@ function GapAnalysisContent() {
             </button>
           </div>
         </div>
+
+        {!hasProfile && (
+          <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
+            No profile found. Upload your resume on the Career Profile page to run a gap analysis.
+          </div>
+        )}
 
         {error && (
           <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400">
