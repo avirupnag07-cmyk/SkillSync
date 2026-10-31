@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.env.local
+node_modules
+.next
+venv
+backend/venv
+__pycache__
+*.pyc
+.pytest_cache
+*.db
+*.sqlite3
+.DS_Store

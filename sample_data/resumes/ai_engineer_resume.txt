@@ -1,0 +1,32 @@
+Maya Chen
+Senior AI Research & Systems Engineer
+Email: maya.chen@example.com
+Phone: (415) 890-1234
+LinkedIn: linkedin.com/in/mayachen-ai
+GitHub: github.com/mayachen-ai
+Location: San Francisco, CA
+
+SUMMARY
+Senior AI Systems Engineer with 4+ years of experience developing autonomous multi-agent frameworks, scalable RAG architectures, and fine-tuning open-weight foundation models.
+
+CORE COMPETENCIES
+- Programming & Query: Python, TypeScript, SQL, Bash
+- AI & Deep Learning: PyTorch, Hugging Face Transformers, LLMs, RAG, LangGraph, LangChain, Vector Databases (Chroma, Pinecone), MLOps
+- Infrastructure & Backend: FastAPI, Docker, PostgreSQL, Redis, REST APIs, Git, Linux
+
+EXPERIENCE
+Lead AI Systems Engineer — Cognitive Matrix Labs (2022 – Present)
+- Architected cyclical LangGraph agent workflows processing 500k+ customer research interactions monthly with human-in-the-loop validation.
+- Engineered hybrid vector and lexical retrieval (RAG) using pgvector and ChromaDB, reducing latency by 45% and eliminating hallucination rates.
+- Fine-tuned quantized Llama 3 and Mistral models using LoRA and QLoRA for domain-specific contract analysis.
+
+Machine Learning Engineer — Synapse Intelligence (2020 – 2022)
+- Built automated evaluation benchmarks comparing model outputs using PyTorch and Hugging Face.
+- Created microservices with FastAPI and Docker deployed onto Kubernetes clusters with automated CI/CD pipelines.
+
+PROJECTS
+- MultiAgent-Orchestrator: Open-source hierarchical supervisor agent with state checkpointing and SQLite memory persistence (1.2k GitHub stars).
+- SemanticCodeRAG: Terminal-based semantic codebase indexing tool using sentence transformers and tree-sitter.
+
+EDUCATION
+B.S. in Computer Science — University of California, Berkeley (2020)
