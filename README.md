@@ -142,33 +142,141 @@ Once running:
 
 ---
 
-## 💻 Manual Local Development Setup
+## 🚀 Local Deployment Guide
 
-### 1. Backend Service
+Anyone can clone and run SkillSync locally on their machine within minutes. You can choose either the **One-Command Docker Deployment** (recommended) or the **Native Local Setup**.
+
+---
+
+### Prerequisites
+Before starting, ensure you have the following installed on your machine:
+
+- **For Docker Deployment**:
+  - [Docker](https://docs.docker.com/get-docker/) (v20.10+)
+  - [Docker Compose](https://docs.docker.com/compose/) (v2.0+)
+- **For Native Local Setup**:
+  - [Node.js](https://nodejs.org/) (v18.0+ or v20.x recommended) and `npm`
+  - [Python](https://www.python.org/) (v3.9, 3.10, or 3.11) and `pip`
+  - (Optional) [PostgreSQL](https://www.postgresql.org/) (if not using the default zero-config SQLite mode)
+  - (Optional) [Ollama](https://ollama.com/) (if you wish to run local LLMs like Llama 3 or Qwen)
+
+---
+
+### Method A: One-Command Docker Deployment (Recommended)
+
+This runs the PostgreSQL database, FastAPI backend, and Next.js frontend in isolated containers with automated database migrations and health checks.
+
 ```bash
-cd backend
+# 1. Clone the repository
+git clone https://github.com/avirupnag07-cmyk/SkillSync.git
+cd SkillSync
+
+# 2. Create your environment configuration file
+cp .env.example .env
+
+# 3. Build and launch all services
+docker compose up --build
+```
+
+> [!TIP]
+> To run the containers in detached (background) mode, use:
+> ```bash
+> docker compose up -d --build
+> ```
+> To stop the services: `docker compose down`
+
+#### Optional: Run with Local Ollama Container
+If you want Docker to also spin up an Ollama container for local open-weight models:
+```bash
+docker compose --profile with-ollama up --build
+```
+
+---
+
+### Method B: Native Local Setup (Without Docker)
+
+You can run SkillSync directly on your machine using two terminal tabs. In local mode, the backend defaults to SQLite (`sqlite:///./skillsync.db`), meaning no database installation is required!
+
+#### Step 1: Backend Setup (Terminal 1)
+```bash
+# 1. Navigate to the backend directory
+cd SkillSync/backend
+
+# 2. Create and activate a Python virtual environment
+# On macOS/Linux:
 python3 -m venv venv
 source venv/bin/activate
+
+# On Windows (PowerShell):
+# python -m venv venv
+# .\venv\Scripts\Activate.ps1
+
+# 3. Install required Python packages
+pip install --upgrade pip
 pip install -r requirements.txt
 
-# Run test suite
+# 4. Verify the test suite (optional but recommended)
 pytest app/tests -v
 
-# Launch FastAPI development server
-uvicorn app.main:app --reload --port 8000
+# 5. Start the FastAPI backend server
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+*The backend API will now be running at: `http://localhost:8000` (Swagger Docs: `http://localhost:8000/docs`)*
 
-### 2. Frontend Application
+---
+
+#### Step 2: Frontend Setup (Terminal 2)
 ```bash
-cd frontend
+# 1. Open a new terminal and navigate to the frontend directory
+cd SkillSync/frontend
+
+# 2. Install Node dependencies
 npm install
 
-# Build static production bundle
-npm run build
+# 3. (Optional) Create .env.local if you changed the backend port:
+# echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1" > .env.local
 
-# Start Next.js development server
+# 4. Start the Next.js development server
 npm run dev
 ```
+*The frontend interface will now be live at: `http://localhost:3000`*
+
+---
+
+### 🌐 Accessing the Application
+
+| Service | Local URL | Description |
+| :--- | :--- | :--- |
+| **Web Dashboard** | [http://localhost:3000](http://localhost:3000) | Complete Next.js user interface |
+| **Interactive API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI for testing all REST endpoints |
+| **ReDoc Specification** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Alternative OpenAPI documentation |
+| **Health Diagnostics** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) | Live engine status and LLM provider info |
+
+---
+
+### ⚡ Verification & Step-by-Step Demo Walkthrough
+
+Once both services are running:
+
+1. **Dashboard Overview (`/`)**: Open [http://localhost:3000](http://localhost:3000) to see executive market metrics. Click any of the pre-loaded sample profiles (e.g. *Maya Chen - Senior AI*) to load immediate test data.
+2. **Career Profile (`/profile`)**: Test the resume parser by dragging-and-dropping one of the sample PDF resumes located in `sample_data/resumes/maya_chen_ai_engineer.pdf`. Observe how skills, experience, and contact details are automatically parsed and displayed.
+3. **Job Intelligence (`/jobs`)**: Search remote jobs using Remotive and Arbeitnow APIs, view curated benchmark roles, or paste any custom job description.
+4. **Skill Gap Analysis (`/gap-analysis`)**: Select your profile and target job, click **"Recalculate Gap Analysis"**, and watch the circular compatibility gauge, 8-domain radar chart, and categorized matrices render in real time.
+5. **Market Analytics (`/market`)**: Review the top in-demand skills leaderboard and interactive Recharts visualizations.
+6. **Learning Roadmap (`/roadmap`)**: View your personalized weekly milestones curriculum and check off tasks to test interactive progress tracking.
+7. **Role Comparison (`/role-comparison`)**: Compare careers like AI Engineer vs. Data Scientist side-by-side.
+8. **Reports & Exports (`/reports`)**: Click **"Download PDF Document"** or **"CSV"** to test live document streaming.
+
+---
+
+### 🔧 Troubleshooting & Common Questions
+
+- **Port 3000 or 8000 is already in use**:
+  - You can change the frontend port by running `npm run dev -- -p 3001` or the backend port by adding `--port 8080` to `uvicorn`. Update `NEXT_PUBLIC_API_URL` accordingly.
+- **Do I need an OpenAI or Gemini API key to run SkillSync?**:
+  - **No.** SkillSync features a built-in deterministic rule and ontology engine with 450+ canonical skills and semantic similarity mappings. The entire workflow operates out of the box with zero external API keys.
+- **Can I use local Ollama models?**:
+  - Yes! If you have Ollama running locally (`ollama run llama3`), SkillSync will automatically detect it at `http://localhost:11434` and use it for agent reasoning, visible on the top header badge.
 
 ---
 
